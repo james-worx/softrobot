@@ -1,16 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from r2d2.evolutionary_algorithm.objective import WHEEL_JOINT_INDICES
+# Human-readable labels for the two differential-drive genes.
+PARAMETER_LABELS = {0: "left wheels", 1: "right wheels"}
 
 
 def analyze_parameters(population_history):
     """Plot how each parameter evolved, as a single gridded figure.
 
-    Previously this opened one window per parameter; for a robot with a dozen
-    joints that meant a dozen pop-up windows. Everything is now drawn as a grid
-    of subplots in one figure. The driven wheel joints (the only parameters the
-    objective actually uses) are highlighted so the meaningful ones stand out.
+    With the differential-drive model the genome is just two values (left- and
+    right-side wheel velocities), so this draws one labelled subplot per side in
+    a single figure instead of a window per joint.
 
     Args:
         population_history (list): a list of generations, where each generation
@@ -43,16 +43,15 @@ def analyze_parameters(population_history):
 
     for param_idx in range(num_parameters):
         ax = axes_flat[param_idx]
-        is_wheel = param_idx in WHEEL_JOINT_INDICES
         ax.plot(generations, avg_parameters[:, param_idx], label='Average')
         ax.plot(generations, best_parameters[:, param_idx], label='Best')
+        label = PARAMETER_LABELS.get(param_idx)
         title = f'Parameter {param_idx}'
-        if is_wheel:
-            title += ' (wheel)'
-            ax.set_facecolor('#f3f8ff')
+        if label:
+            title += f' ({label})'
         ax.set_title(title)
         ax.set_xlabel('Generation')
-        ax.set_ylabel('Value')
+        ax.set_ylabel('Target velocity')
         ax.grid(True)
         ax.legend(fontsize='small')
 
@@ -60,6 +59,6 @@ def analyze_parameters(population_history):
     for spare_idx in range(num_parameters, len(axes_flat)):
         axes_flat[spare_idx].axis('off')
 
-    fig.suptitle('Parameter Evolution (wheel joints highlighted)')
+    fig.suptitle('Parameter Evolution (differential-drive wheel velocities)')
     fig.tight_layout()
     plt.show()

@@ -5,30 +5,42 @@ import json
 import os
 import datetime
 
-# The R2D2 URDF exposes its four driven wheels at these joint indices; the
-# genome's values at these positions are used as wheel target velocities.
-WHEEL_JOINT_INDICES = (2, 3, 6, 7)
+# R2D2 is driven as a differential-drive base: its four wheels are grouped into
+# a left and a right side. Both wheels on a side always share one velocity, so
+# the only motors worth controlling are "left side" and "right side". The URDF
+# exposes the wheels at these joint indices (see specs/r2d2_joints.csv).
+LEFT_WHEEL_JOINT_INDICES = (6, 7)   # left_front_wheel_joint, left_back_wheel_joint
+RIGHT_WHEEL_JOINT_INDICES = (2, 3)  # right_front_wheel_joint, right_back_wheel_joint
+
+# The genome is just two values: [left_side_velocity, right_side_velocity].
+# Equal values drive straight; a difference steers. Nothing else on the robot
+# (legs, gripper, head) is actuated, so the search space is only these two DOF.
+GENOME_SIZE = 2
 
 # Target the robot should try to reach (placed directly forward of the start).
 TARGET_POSITION = [0, 10, 0]
 
 
 def apply_wheel_velocities(robot_id, robot_parameters, force=500):
-    """Drive the four wheel joints at the velocities encoded in the genome.
+    """Drive R2D2 as a differential-drive base from a two-gene genome.
 
-    Shared by the training objective and the best-solution replay so both
-    apply the genome the same way.
+    The genome holds one target velocity per side, ``[left, right]``. Both
+    wheels on a side are driven at that side's velocity, so equal values go
+    straight and a difference turns. Shared by the training objective and the
+    best-solution replay so both apply the genome the same way.
 
     Args:
         robot_id: PyBullet body id of the loaded robot.
-        robot_parameters: per-joint parameter vector; entries at
-            :data:`WHEEL_JOINT_INDICES` are used as target velocities.
+        robot_parameters: two-element vector ``[left_velocity, right_velocity]``.
         force: maximum motor force applied to each wheel joint.
     """
-    for joint_index, param in enumerate(robot_parameters):
-        if joint_index in WHEEL_JOINT_INDICES:
-            p.setJointMotorControl2(robot_id, joint_index, p.VELOCITY_CONTROL,
-                                    targetVelocity=param, force=force)
+    left_velocity, right_velocity = robot_parameters[0], robot_parameters[1]
+    for joint_index in LEFT_WHEEL_JOINT_INDICES:
+        p.setJointMotorControl2(robot_id, joint_index, p.VELOCITY_CONTROL,
+                                targetVelocity=left_velocity, force=force)
+    for joint_index in RIGHT_WHEEL_JOINT_INDICES:
+        p.setJointMotorControl2(robot_id, joint_index, p.VELOCITY_CONTROL,
+                                targetVelocity=right_velocity, force=force)
 
 
 def save_training_data(data, filename):

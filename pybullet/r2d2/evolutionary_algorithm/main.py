@@ -1,7 +1,8 @@
 """Evolutionary algorithm that optimises R2D2's wheel-control parameters.
 
 Steps:
-1. Count the robot's joints (headless) to size the parameter vector.
+1. Size the parameter vector to the two differential-drive controls (the only
+   motors that matter): left- and right-side wheel velocities.
 2. Load or initialise a population of candidate solutions.
 3. Evolve the population, evaluating fitness headless and in parallel.
 4. Plot fitness/parameter evolution and replay the best solution in the GUI.
@@ -22,11 +23,9 @@ import os
 import re
 
 import numpy as np
-import pybullet as p
-import pybullet_data  # type: ignore
 
 from r2d2.evolutionary_algorithm.training import initialize_population, evolve_population
-from r2d2.evolutionary_algorithm.objective import objective_function
+from r2d2.evolutionary_algorithm.objective import objective_function, GENOME_SIZE
 
 from r2d2.analysis.fitness_plot import plot_fitness_evolution
 from r2d2.analysis.parameter_analysis import analyze_parameters
@@ -43,14 +42,10 @@ def main(population_size=6, num_generations=10, num_workers=None):
         num_workers: parallel worker processes for fitness evaluation;
             ``None`` uses all available CPU cores.
     """
-    # Count the robot's joints with a headless connection (no GUI needed),
-    # then dynamically size the parameter vector to match.
-    p.connect(p.DIRECT)
-    p.setAdditionalSearchPath(pybullet_data.getDataPath())
-    robot_id = p.loadURDF("r2d2.urdf")
-    num_parameters = p.getNumJoints(robot_id)
-    p.resetSimulation()
-    p.disconnect()
+    # The robot is driven as a differential-drive base, so each candidate only
+    # needs two genes (left- and right-side wheel velocities) no matter how many
+    # joints the URDF exposes. Those are the only motors actuated.
+    num_parameters = GENOME_SIZE
 
     # Resume from the most recent saved population if one exists.
     directory = 'r2d2/evolutionary_algorithm/trained_models'
@@ -58,15 +53,25 @@ def main(population_size=6, num_generations=10, num_workers=None):
     date_pattern = r'best_generation_info_\d{14}.npy'
     matching_files = sorted(f for f in os.listdir(directory) if re.match(date_pattern, f))
 
+    population = None
     if matching_files:
         selected_file = matching_files[-1]  # most recent by timestamp
         population_file_path = os.path.join(directory, selected_file)
-        population = np.load(population_file_path, allow_pickle=True)
-        parameters_list = [item['parameters'] for item in population]
-        population = np.array(parameters_list)
-        print("Found matching file:", selected_file, "\nLoading population from file.")
-    else:
-        print("No matching file found. Initializing a new population.")
+        saved = np.load(population_file_path, allow_pickle=True)
+        candidate = np.array([item['parameters'] for item in saved])
+        # Populations saved under the older, wider (per-joint) genome are
+        # incompatible with the current two-gene model; start fresh instead of
+        # crashing on the dimension mismatch.
+        if candidate.ndim == 2 and candidate.shape[1] == num_parameters:
+            population = candidate
+            print("Found matching file:", selected_file, "\nLoading population from file.")
+        else:
+            width = candidate.shape[1] if candidate.ndim == 2 else "?"
+            print(f"Ignoring {selected_file}: it has {width} genes per candidate "
+                  f"but the current model uses {num_parameters}. Starting fresh.")
+
+    if population is None:
+        print("Initializing a new population.")
         population = initialize_population(population_size, num_parameters)
 
     # Evolve the population (headless + parallel; prints live per-gen stats).
