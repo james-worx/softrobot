@@ -12,6 +12,7 @@ from r2d2.evolutionary_algorithm.training import (
     reproduce,
     select_candidates,
 )
+from r2d2.evolutionary_algorithm.main import load_latest_population
 
 
 def test_initialize_population_shape_and_range():
@@ -54,3 +55,26 @@ def test_reproduce_doubles_population():
     offspring = reproduce(selected, mutation_rate=0.1)
     assert len(offspring) == len(selected) * 2
     assert all(len(child) == 5 for child in offspring)
+
+
+def test_load_latest_population_uses_newest_final_population(tmp_path):
+    older = np.array([[1.0, 2.0], [3.0, 4.0]])
+    newer = np.array([[5.0, 6.0], [7.0, 8.0]])
+    np.save(tmp_path / "final_population_20260630010101.npy", older)
+    np.save(tmp_path / "final_population_20260630020202.npy", newer)
+
+    loaded = load_latest_population(tmp_path, num_parameters=2)
+
+    assert np.array_equal(loaded, newer)
+
+
+def test_load_latest_population_ignores_best_generation_files(tmp_path):
+    best_generation = np.array(
+        [{"parameters": [1.0, 2.0], "fitness": -3.0}],
+        dtype=object,
+    )
+    np.save(tmp_path / "best_generation_info_20260630020202.npy", best_generation)
+
+    loaded = load_latest_population(tmp_path, num_parameters=2)
+
+    assert loaded is None
