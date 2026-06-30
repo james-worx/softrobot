@@ -1,7 +1,6 @@
 import pybullet as p
 import pybullet_data
 import numpy as np
-import random
 import json
 import os
 import datetime
@@ -66,19 +65,18 @@ def objective_function(robot_parameters):
         if joint_index in wheel_joint_indices:
             p.setJointMotorControl2(robot_id, joint_index, p.VELOCITY_CONTROL, targetVelocity=param, force=500)
 
-    # Run the simulation for a certain number of steps
-    # Generate a random number of steps within a specified range for the simulation
+    # A failed simulation (e.g. the physics server dropped) should score as the
+    # worst possible candidate rather than crash the run with a NameError, so
+    # seed the distance with a large penalty before the simulation block.
+    distance_to_target = 1e6
+
+    # Run the simulation for a fixed number of steps.
     try:
-        # Generate a random number of steps within a specified range for the simulation
-        min_steps = 2000
-        max_steps = 3000
         steps = 6500
-        random_steps = random.randint(min_steps, max_steps)  # Random number of steps between min_steps and max_steps
-       
-        # Generate a random target position within a specified range
-        max_distance = 10
-        target_position = [0,10,0]
-        
+
+        # Target the robot should try to reach (directly forward).
+        target_position = [0, 10, 0]
+
         # Add a small floating red circle at the target position
         target_visual_shape_id = p.createVisualShape(p.GEOM_SPHERE, radius=0.25, rgbaColor=[0, 1, 0, 1])
         target_collision_shape_id = p.createCollisionShape(p.GEOM_SPHERE, radius=0.25)

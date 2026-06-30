@@ -55,29 +55,28 @@ def evolve_population(population, num_generations, objective_function, mutation_
         # Logging the details of each generation
         print(f"Generation {generation + 1}: Best fitness = {best_fitnesses[-1]}")
 
-    # save population history
-    final_population_history_path = f'r2d2/evolutionary_algorithm/trained_models/final_population_history_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.npy'
-    directory = os.path.dirname(final_population_history_path)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    np.save(final_population_history_path, np.array(generation_info))
+    # Save training artifacts for analysis and future training sessions.
+    # Use a single timestamp so all files from this run share one suffix.
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    model_dir = 'r2d2/evolutionary_algorithm/trained_models'
+    os.makedirs(model_dir, exist_ok=True)
 
-    # Save the final population for future training sessions
-    final_population_path = f'r2d2/evolutionary_algorithm/trained_models/final_population_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.npy'
-    directory = os.path.dirname(final_population_path)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    np.save(final_population_path, population)  # Save the final population
-    
-    # Optional: Save fitness history
+    # Save the full population history (every generation), not just the last one.
+    np.save(os.path.join(model_dir, f'final_population_history_{timestamp}.npy'),
+            np.array(population_history, dtype=object))
+
+    # Save the final population so a future run can resume from it.
+    final_population_path = os.path.join(model_dir, f'final_population_{timestamp}.npy')
+    np.save(final_population_path, population)
+
+    # Save the best generation's info and the fitness history.
     best_fitness_index = np.argmax(best_fitnesses)
     best_generation_info = population_history[best_fitness_index]
-    np.save(f"r2d2/evolutionary_algorithm/trained_models/best_generation_info_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.npy", np.array(best_generation_info))
-    
-    np.save(f"r2d2/evolutionary_algorithm/trained_models/avg_fitnesses_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.npy", np.array(avg_fitnesses))
-    np.save(f"r2d2/evolutionary_algorithm/trained_models/worst_fitnesses_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.npy", np.array(worst_fitnesses))
+    np.save(os.path.join(model_dir, f'best_generation_info_{timestamp}.npy'),
+            np.array(best_generation_info))
+    np.save(os.path.join(model_dir, f'avg_fitnesses_{timestamp}.npy'), np.array(avg_fitnesses))
+    np.save(os.path.join(model_dir, f'worst_fitnesses_{timestamp}.npy'), np.array(worst_fitnesses))
     print('Final population saved to:', final_population_path)
-    # print(shape(population_history)
 
     return population, best_fitnesses, avg_fitnesses, worst_fitnesses, population_history
 
