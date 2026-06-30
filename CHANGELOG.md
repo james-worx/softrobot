@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.2.2 (2026-06-30)
+
+### Bug Fixes
+
+- Resume final populations and show replay GUI
+  ([`a501595`](https://github.com/james-worx/softrobot/commit/a501595eb9c3a9229a5435688739d5d75df666f0))
+
+
 ## v1.2.1 (2026-06-30)
 
 ### Performance Improvements
