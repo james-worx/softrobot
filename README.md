@@ -43,14 +43,34 @@ pip install -r pybullet/requirements.txt
 
 ## Running
 
-All commands are run from the `pybullet/` directory so the `r2d2` package
-resolves:
+### Using `make` (recommended)
+
+A [`Makefile`](Makefile) wraps the common commands. Each target invokes the
+repo-local `.venv` interpreter and sets `PYTHONPATH` for you, so you don't
+have to keep the virtualenv activated or remember to export `PYTHONPATH`.
+Run these from the **repository root**:
+
+```bash
+make sim      # interactive, keyboard-controlled R2D2 simulation (GUI window)
+make train    # evolutionary-algorithm training (GUI window + plots)
+make test     # run the unit-test suite
+make lint     # run the ruff linter
+```
+
+`make sim` and `make train` open a GUI window, so run them on a local
+desktop session rather than over a plain SSH connection.
+
+### Running the scripts directly
+
+If you'd rather not use `make`, run the scripts yourself from the
+`pybullet/` directory so the `r2d2` package resolves. Make sure the `.venv`
+is active first (`source .venv/bin/activate`):
 
 ```bash
 cd pybullet
 ```
 
-### Interactive simulation
+#### Interactive simulation
 
 ```bash
 python3 r2d2/sim-key-control.py
@@ -59,7 +79,7 @@ python3 r2d2/sim-key-control.py
 Opens a GUI window. Drive R2D2 with the arrow keys (up/down for velocity,
 left/right to turn) and toggle the gripper with the space bar.
 
-### Evolutionary-algorithm training
+#### Evolutionary-algorithm training
 
 ```bash
 export PYTHONPATH=$(pwd)
@@ -81,8 +101,8 @@ After training, the run plots fitness evolution and per-parameter evolution
 ```bash
 pip install -e ".[dev]"   # installs ruff + pytest
 
-ruff check .              # lint
-pytest -q                 # run the test suite
+ruff check .              # lint  (or: make lint)
+pytest -q                 # run the test suite  (or: make test)
 ```
 
 The same two checks run in CI on every pull request and push to `master`
