@@ -91,6 +91,16 @@ class TelemetryHUD:
     _TEXT_COLOR = (0.1, 0.1, 0.1)
     _TRAIL_COLOR = (0.0, 0.4, 1.0)
 
+    # Trail tuning. Each visible segment is a PyBullet debug line; the GUI
+    # re-syncs every live debug item on each add, so an unbounded trail makes
+    # the work per update grow without limit (O(n^2) over a replay) and is what
+    # turned a ~27 s episode into a 10+ minute animation. We therefore (a) only
+    # start a new segment after the robot has travelled a minimum distance, and
+    # (b) cap the number of live segments, reusing the oldest segment's id in a
+    # ring once the cap is hit. This keeps per-update cost flat.
+    _TRAIL_MIN_SEGMENT = 0.1   # metres of travel before drawing a new segment
+    _TRAIL_MAX_SEGMENTS = 256  # hard cap on simultaneously live trail lines
+
     def __init__(self, robot_id, target_position, start_position=None,
                  follow_camera=True):
         self.robot_id = robot_id
@@ -106,6 +116,8 @@ class TelemetryHUD:
         self._prev_xy = self.start_position[:2].copy()
         self._trail_anchor = self.start_position.copy()
         self._text_ids = []  # one debug-text id per HUD line
+        self._trail_ids = []  # live trail-segment debug-item ids (ring buffer)
+        self._trail_cursor = 0  # next ring slot to overwrite once at capacity
 
         self._draw_target_marker()
 
@@ -144,18 +156,34 @@ class TelemetryHUD:
         return metrics
 
     def _draw_trail(self, position):
-        """Extend the ground trail from the last anchor to the current spot."""
+        """Extend the ground trail, keeping the live segment count bounded."""
         anchor = self._trail_anchor.copy()
         anchor[2] = 0.05
         here = position.copy()
         here[2] = 0.05
-        # Only draw once the robot has actually moved, to avoid zero-length
-        # segments that PyBullet rejects.
-        if np.linalg.norm(here[:2] - anchor[:2]) > 1e-3:
-            p.addUserDebugLine(anchor.tolist(), here.tolist(),
-                               lineColorRGB=list(self._TRAIL_COLOR),
-                               lineWidth=2.0)
-            self._trail_anchor = position.copy()
+        # Only draw once the robot has travelled a meaningful distance. This
+        # both skips zero-length segments (which PyBullet rejects) and keeps
+        # the total segment count low for a normal-length path.
+        if np.linalg.norm(here[:2] - anchor[:2]) < self._TRAIL_MIN_SEGMENT:
+            return
+
+        if len(self._trail_ids) < self._TRAIL_MAX_SEGMENTS:
+            self._trail_ids.append(
+                p.addUserDebugLine(anchor.tolist(), here.tolist(),
+                                   lineColorRGB=list(self._TRAIL_COLOR),
+                                   lineWidth=2.0))
+        else:
+            # At capacity: reuse the oldest segment's id (replaceItemUniqueId)
+            # so the number of live debug lines never grows. The visible trail
+            # becomes the most recent _TRAIL_MAX_SEGMENTS segments.
+            reuse_id = self._trail_ids[self._trail_cursor]
+            self._trail_ids[self._trail_cursor] = p.addUserDebugLine(
+                anchor.tolist(), here.tolist(),
+                lineColorRGB=list(self._TRAIL_COLOR), lineWidth=2.0,
+                replaceItemUniqueId=reuse_id)
+            self._trail_cursor = (self._trail_cursor + 1) % self._TRAIL_MAX_SEGMENTS
+
+        self._trail_anchor = position.copy()
 
     def _draw_text(self, metrics):
         """Render (or refresh) the stacked HUD lines above the robot."""
