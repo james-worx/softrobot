@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "softrobot"
+version = "0.1.0"
+description = "PyBullet R2D2 simulation with an evolutionary algorithm for locomotion control."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "James Slater" }]
+dependencies = [
+    "pybullet",
+    "numpy",
+    "pandas",
+    "matplotlib",
+]
+
+[project.urls]
+Homepage = "https://github.com/james-worx/softrobot"
+
+# The importable package (`r2d2`) lives under the pybullet/ directory.
+[tool.setuptools]
+package-dir = { "" = "pybullet" }
+
+[tool.setuptools.packages.find]
+where = ["pybullet"]
+
+[project.optional-dependencies]
+dev = ["ruff", "pytest"]
+
+[tool.ruff]
+target-version = "py39"
+# The legacy vPython scripts use `from vpython import *`, the idiomatic
+# vpython style, which trips star-import rules; exclude that legacy tree.
+extend-exclude = ["vPython"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.semantic_release]
+# Drive versioning from Conventional Commits; bump the version in this file.
+version_toml = ["pyproject.toml:project.version"]
+# This project is not published to a package index, so nothing is built.
+build_command = ""
+# Tag the release commit with [skip ci] so it does not re-trigger workflows.
+commit_message = "chore(release): {version} [skip ci]"
+
+[tool.semantic_release.branches.main]
+match = "(master|main)"

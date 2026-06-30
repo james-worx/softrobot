@@ -1,7 +1,6 @@
 import pybullet as p
 import pybullet_data
 import numpy as np
-import random
 import json
 import os
 import datetime
@@ -51,38 +50,37 @@ def objective_function(robot_parameters):
     p.setGravity(0, 0, -9.8)
     
     # Load the plane
-    plane_id = p.loadURDF("plane.urdf")
+    p.loadURDF("plane.urdf")
 
     # Set the robot's initial position above the plane
     start_position = [0, 0, 1]  # Adjust z value as needed
     start_orientation = p.getQuaternionFromEuler([0, 0, 0])
-    
+
     # Load the robot
     robot_id = p.loadURDF("r2d2.urdf", start_position, start_orientation)
-    
+
     wheel_joint_indices = [2, 3, 6, 7]  # Assuming wheel joints are at indices 2 and 3
 
     for joint_index, param in enumerate(robot_parameters):
         if joint_index in wheel_joint_indices:
             p.setJointMotorControl2(robot_id, joint_index, p.VELOCITY_CONTROL, targetVelocity=param, force=500)
 
-    # Run the simulation for a certain number of steps
-    # Generate a random number of steps within a specified range for the simulation
+    # A failed simulation (e.g. the physics server dropped) should score as the
+    # worst possible candidate rather than crash the run with a NameError, so
+    # seed the distance with a large penalty before the simulation block.
+    distance_to_target = 1e6
+
+    # Run the simulation for a fixed number of steps.
     try:
-        # Generate a random number of steps within a specified range for the simulation
-        min_steps = 2000
-        max_steps = 3000
         steps = 6500
-        random_steps = random.randint(min_steps, max_steps)  # Random number of steps between min_steps and max_steps
-       
-        # Generate a random target position within a specified range
-        max_distance = 10
-        target_position = [0,10,0]
-        
+
+        # Target the robot should try to reach (directly forward).
+        target_position = [0, 10, 0]
+
         # Add a small floating red circle at the target position
         target_visual_shape_id = p.createVisualShape(p.GEOM_SPHERE, radius=0.25, rgbaColor=[0, 1, 0, 1])
         target_collision_shape_id = p.createCollisionShape(p.GEOM_SPHERE, radius=0.25)
-        target_body_id = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=target_collision_shape_id, baseVisualShapeIndex=target_visual_shape_id, basePosition=target_position)
+        p.createMultiBody(baseMass=0, baseCollisionShapeIndex=target_collision_shape_id, baseVisualShapeIndex=target_visual_shape_id, basePosition=target_position)
         
         
         for _ in range(steps):

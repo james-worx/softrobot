@@ -1,6 +1,5 @@
 import pybullet as p
 import pybullet_data
-import numpy as np
 
 def visualize_best_solution(best_parameters):
     """
@@ -24,7 +23,7 @@ def visualize_best_solution(best_parameters):
     p.setGravity(0, 0, -9.8)
     
     # Load the plane
-    plane_id = p.loadURDF("plane.urdf")
+    p.loadURDF("plane.urdf")
 
     # Set the robot's initial position above the plane
     start_position = [0, 0, 1]  # Adjust z value as needed
