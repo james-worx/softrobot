@@ -32,6 +32,31 @@ from r2d2.analysis.parameter_analysis import analyze_parameters
 from r2d2.analysis.final_performance import visualize_best_solution
 
 
+def load_latest_population(directory, num_parameters):
+    """Load the newest compatible final population, if one exists."""
+    date_pattern = r'final_population_\d{14}.npy'
+    matching_files = sorted(f for f in os.listdir(directory) if re.fullmatch(date_pattern, f))
+
+    if not matching_files:
+        return None
+
+    selected_file = matching_files[-1]  # most recent by timestamp
+    population_file_path = os.path.join(directory, selected_file)
+    candidate = np.load(population_file_path, allow_pickle=True)
+
+    # Populations saved under the older, wider (per-joint) genome are
+    # incompatible with the current two-gene model; start fresh instead of
+    # crashing on the dimension mismatch.
+    if candidate.ndim == 2 and candidate.shape[1] == num_parameters:
+        print("Found saved population:", selected_file, "\nLoading population from file.")
+        return candidate
+
+    width = candidate.shape[1] if candidate.ndim == 2 else "?"
+    print(f"Ignoring {selected_file}: it has {width} genes per candidate "
+          f"but the current model uses {num_parameters}. Starting fresh.")
+    return None
+
+
 def main(population_size=20, num_generations=10, num_workers=None):
     """Run the evolutionary algorithm.
 
@@ -50,25 +75,7 @@ def main(population_size=20, num_generations=10, num_workers=None):
     # Resume from the most recent saved population if one exists.
     directory = 'r2d2/evolutionary_algorithm/trained_models'
     os.makedirs(directory, exist_ok=True)
-    date_pattern = r'best_generation_info_\d{14}.npy'
-    matching_files = sorted(f for f in os.listdir(directory) if re.match(date_pattern, f))
-
-    population = None
-    if matching_files:
-        selected_file = matching_files[-1]  # most recent by timestamp
-        population_file_path = os.path.join(directory, selected_file)
-        saved = np.load(population_file_path, allow_pickle=True)
-        candidate = np.array([item['parameters'] for item in saved])
-        # Populations saved under the older, wider (per-joint) genome are
-        # incompatible with the current two-gene model; start fresh instead of
-        # crashing on the dimension mismatch.
-        if candidate.ndim == 2 and candidate.shape[1] == num_parameters:
-            population = candidate
-            print("Found matching file:", selected_file, "\nLoading population from file.")
-        else:
-            width = candidate.shape[1] if candidate.ndim == 2 else "?"
-            print(f"Ignoring {selected_file}: it has {width} genes per candidate "
-                  f"but the current model uses {num_parameters}. Starting fresh.")
+    population = load_latest_population(directory, num_parameters)
 
     if population is None:
         print("Initializing a new population.")

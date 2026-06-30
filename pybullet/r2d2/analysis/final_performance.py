@@ -25,8 +25,18 @@ def visualize_best_solution(best_parameters, steps=6500, realtime=True):
         realtime (bool): if True, sleep between steps so the replay plays at
             roughly wall-clock speed instead of as fast as possible.
     """
-    # Connect to the physics server (reusing an existing connection if any).
-    if p.getConnectionInfo()['isConnected'] == 0:
+    # Training leaves the main process connected to DIRECT after selecting the
+    # best candidate. A DIRECT connection cannot show the final replay, so
+    # switch to GUI unless an existing GUI connection is already active.
+    connection_info = p.getConnectionInfo()
+    if (
+        connection_info['isConnected']
+        and connection_info.get('connectionMethod') != p.GUI
+    ):
+        p.disconnect()
+        connection_info = p.getConnectionInfo()
+
+    if connection_info['isConnected'] == 0:
         p.connect(p.GUI)
 
     configure_visualizer()
