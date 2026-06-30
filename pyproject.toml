@@ -38,3 +38,14 @@ extend-exclude = ["vPython"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.semantic_release]
+# Drive versioning from Conventional Commits; bump the version in this file.
+version_toml = ["pyproject.toml:project.version"]
+# This project is not published to a package index, so nothing is built.
+build_command = ""
+# Tag the release commit with [skip ci] so it does not re-trigger workflows.
+commit_message = "chore(release): {version} [skip ci]"
+
+[tool.semantic_release.branches.main]
+match = "(master|main)"

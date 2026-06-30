@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+
+# semantic-release needs to push the version commit, tag, and GitHub Release.
+permissions:
+  contents: write
+
+# Never run two releases at once.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # semantic-release reads the full commit history to compute the bump.
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python Semantic Release
+        uses: python-semantic-release/python-semantic-release@v10.5.3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
