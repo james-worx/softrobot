@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.2.3 (2026-06-30)
+
+### Bug Fixes
+
+- Stop the best-solution replay from dragging for minutes
+  ([`aa2151e`](https://github.com/james-worx/softrobot/commit/aa2151ead21c39b83a340e080f77b4cf09bc5814))
+
+
 ## v1.2.2 (2026-06-30)
 
 ### Bug Fixes
