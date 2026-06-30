@@ -62,15 +62,26 @@ def visualize_best_solution(best_parameters, steps=6500, realtime=True):
 
     hud = TelemetryHUD(robot_id, TARGET_POSITION, start_position=start_position)
 
-    # Run the simulation, refreshing the HUD periodically (every refresh step)
-    # rather than every frame to keep the overlay cheap.
-    refresh_every = 10
-    for step in range(steps):
-        p.stepSimulation()
-        if step % refresh_every == 0:
-            hud.update()
+    # Decouple physics from rendering. Stepping the GUI one physics step at a
+    # time means a render + HUD round-trip for every one of `steps` iterations,
+    # which dominates the runtime (physics itself is a fraction of a second).
+    # Instead, advance the physics in small batches with rendering disabled,
+    # then re-enable rendering and refresh the HUD once per batch. This cuts the
+    # replay from minutes back down to roughly real time while looking the same.
+    steps_per_frame = 8
+    hud.update()
+    remaining = steps
+    while remaining > 0:
+        batch = min(steps_per_frame, remaining)
+        p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 0)
+        for _ in range(batch):
+            p.stepSimulation()
+        p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1)
+        hud.update()
+        remaining -= batch
         if realtime:
-            time.sleep(1. / 240.)
+            # Pace the whole batch at once so playback stays at wall-clock speed.
+            time.sleep(batch / 240.)
 
     final = hud.update()
     print(
