@@ -1,8 +1,6 @@
 import pybullet as p
 import time
 import pybullet_data
-import pandas as pd
-import numpy as np
 
 # Connect to the physics server (GUI mode)
 p.connect(p.GUI)

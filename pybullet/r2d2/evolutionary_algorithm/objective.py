@@ -50,15 +50,15 @@ def objective_function(robot_parameters):
     p.setGravity(0, 0, -9.8)
     
     # Load the plane
-    plane_id = p.loadURDF("plane.urdf")
+    p.loadURDF("plane.urdf")
 
     # Set the robot's initial position above the plane
     start_position = [0, 0, 1]  # Adjust z value as needed
     start_orientation = p.getQuaternionFromEuler([0, 0, 0])
-    
+
     # Load the robot
     robot_id = p.loadURDF("r2d2.urdf", start_position, start_orientation)
-    
+
     wheel_joint_indices = [2, 3, 6, 7]  # Assuming wheel joints are at indices 2 and 3
 
     for joint_index, param in enumerate(robot_parameters):
@@ -80,7 +80,7 @@ def objective_function(robot_parameters):
         # Add a small floating red circle at the target position
         target_visual_shape_id = p.createVisualShape(p.GEOM_SPHERE, radius=0.25, rgbaColor=[0, 1, 0, 1])
         target_collision_shape_id = p.createCollisionShape(p.GEOM_SPHERE, radius=0.25)
-        target_body_id = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=target_collision_shape_id, baseVisualShapeIndex=target_visual_shape_id, basePosition=target_position)
+        p.createMultiBody(baseMass=0, baseCollisionShapeIndex=target_collision_shape_id, baseVisualShapeIndex=target_visual_shape_id, basePosition=target_position)
         
         
         for _ in range(steps):
