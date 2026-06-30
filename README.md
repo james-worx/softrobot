@@ -5,6 +5,11 @@ The current focus is an **evolutionary algorithm** that learns wheel-control
 parameters to drive an R2D2 model toward a target, plus an interactive
 keyboard-driven simulation of the same robot.
 
+R2D2 is treated as a **differential-drive base**: only the left- and right-side
+wheel motors are actuated, so each candidate solution is just two
+values — one target velocity per side (equal values drive straight, a
+difference steers). None of the other joints (legs, gripper, head) are driven.
+
 > This started as an unfinished college project (originally prototyped with
 > vPython, now built on PyBullet) and is being brought to completion. The
 > legacy vPython experiments are kept under [`vPython/`](vPython/) for
@@ -98,8 +103,9 @@ export PYTHONPATH=$(pwd)
 python3 r2d2/evolutionary_algorithm/main.py [--workers N] [--generations N] [--population N]
 ```
 
-The algorithm evolves a population of joint-control parameters to minimise the
-distance between R2D2 and a target placed directly ahead of it. Fitness
+The algorithm evolves a population of two-gene candidates (left- and
+right-side wheel velocities) to minimise the distance between R2D2 and a
+target placed directly ahead of it. Fitness
 evaluation runs headless (PyBullet `DIRECT`) and is parallelised across worker
 processes — pass `--workers` (default: all CPU cores), `--generations`
 (default: 10) and `--population` (default: 6); see `--help`. Training
@@ -123,8 +129,9 @@ locomotion telemetry that tracks the robot:
 * **fitness** – the score the evolutionary algorithm optimises.
 
 The path taken is traced on the ground and the camera follows the robot. The
-per-parameter charts are drawn as a single gridded figure with the driven
-wheel joints highlighted, instead of one pop-up window per parameter.
+per-parameter charts are drawn as a single gridded figure with one labelled
+subplot per drive side (left/right wheels), instead of one pop-up window per
+parameter.
 
 ## Development workflow
 
