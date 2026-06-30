@@ -94,7 +94,23 @@ artifacts (final population, fitness history, best generation) are written to
 automatically resumes from the most recent saved population if one is present.
 
 After training, the run plots fitness evolution and per-parameter evolution
-(via the modules in `r2d2/analysis/`) and visualises the best solution.
+(via the modules in `r2d2/analysis/`) and replays the best solution.
+
+#### Live telemetry HUD
+
+The best-solution replay hides PyBullet's default preview panels (the RGB,
+depth and segmentation tiles, which are not useful here) and overlays live
+locomotion telemetry that tracks the robot:
+
+* **path travelled** – ground distance covered,
+* **displacement** – straight-line distance from the start,
+* **speed** – current (and peak) horizontal speed,
+* **to target** – distance remaining to the goal, and
+* **fitness** – the score the evolutionary algorithm optimises.
+
+The path taken is traced on the ground and the camera follows the robot. The
+per-parameter charts are drawn as a single gridded figure with the driven
+wheel joints highlighted, instead of one pop-up window per parameter.
 
 ## Development workflow
 

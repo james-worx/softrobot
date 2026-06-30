@@ -5,6 +5,32 @@ import json
 import os
 import datetime
 
+# The R2D2 URDF exposes its four driven wheels at these joint indices; the
+# genome's values at these positions are used as wheel target velocities.
+WHEEL_JOINT_INDICES = (2, 3, 6, 7)
+
+# Target the robot should try to reach (placed directly forward of the start).
+TARGET_POSITION = [0, 10, 0]
+
+
+def apply_wheel_velocities(robot_id, robot_parameters, force=500):
+    """Drive the four wheel joints at the velocities encoded in the genome.
+
+    Shared by the training objective and the best-solution replay so both
+    apply the genome the same way.
+
+    Args:
+        robot_id: PyBullet body id of the loaded robot.
+        robot_parameters: per-joint parameter vector; entries at
+            :data:`WHEEL_JOINT_INDICES` are used as target velocities.
+        force: maximum motor force applied to each wheel joint.
+    """
+    for joint_index, param in enumerate(robot_parameters):
+        if joint_index in WHEEL_JOINT_INDICES:
+            p.setJointMotorControl2(robot_id, joint_index, p.VELOCITY_CONTROL,
+                                    targetVelocity=param, force=force)
+
+
 def save_training_data(data, filename):
     """
     Save the training data to a file.
@@ -59,11 +85,7 @@ def objective_function(robot_parameters):
     # Load the robot
     robot_id = p.loadURDF("r2d2.urdf", start_position, start_orientation)
 
-    wheel_joint_indices = [2, 3, 6, 7]  # Assuming wheel joints are at indices 2 and 3
-
-    for joint_index, param in enumerate(robot_parameters):
-        if joint_index in wheel_joint_indices:
-            p.setJointMotorControl2(robot_id, joint_index, p.VELOCITY_CONTROL, targetVelocity=param, force=500)
+    apply_wheel_velocities(robot_id, robot_parameters)
 
     # A failed simulation (e.g. the physics server dropped) should score as the
     # worst possible candidate rather than crash the run with a NameError, so
@@ -75,7 +97,7 @@ def objective_function(robot_parameters):
         steps = 6500
 
         # Target the robot should try to reach (directly forward).
-        target_position = [0, 10, 0]
+        target_position = TARGET_POSITION
 
         # Add a small floating red circle at the target position
         target_visual_shape_id = p.createVisualShape(p.GEOM_SPHERE, radius=0.25, rgbaColor=[0, 1, 0, 1])
