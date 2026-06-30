@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.2.1 (2026-06-30)
+
+### Performance Improvements
+
+- Default population to 20 to use all cores
+  ([`cef0315`](https://github.com/james-worx/softrobot/commit/cef031575fa1d32261b0a56b734096d0ece0cedd))
+
+### Refactoring
+
+- Model R2D2 as differential drive with a two-gene genome
+  ([`f1002bd`](https://github.com/james-worx/softrobot/commit/f1002bd8e5031f76c36d845ca483a0c680802370))
+
+
 ## v1.2.0 (2026-06-30)
 
 ### Features
