@@ -52,13 +52,25 @@ Run these from the **repository root**:
 
 ```bash
 make sim      # interactive, keyboard-controlled R2D2 simulation (GUI window)
-make train    # evolutionary-algorithm training (GUI window + plots)
+make train    # evolutionary-algorithm training (headless), then GUI replay + plots
 make test     # run the unit-test suite
 make lint     # run the ruff linter
 ```
 
-`make sim` and `make train` open a GUI window, so run them on a local
-desktop session rather than over a plain SSH connection.
+Training runs **headless and in parallel** (one worker process per CPU core),
+printing live per-generation stats (best/avg/worst fitness, time per
+generation, and ETA). Tune it with make variables:
+
+```bash
+make train WORKERS=4         # cap fitness evaluation at 4 worker processes
+make train WORKERS=1         # evaluate sequentially (no multiprocessing)
+make train GENERATIONS=20    # evolve for more generations
+make train POPULATION=10     # larger population (fresh runs only)
+```
+
+`make sim` opens a GUI window for the whole session, and `make train` opens
+one for the final best-solution replay plus the analysis plots — so run them
+on a local desktop session rather than over a plain SSH connection.
 
 ### Running the scripts directly
 
@@ -83,12 +95,14 @@ left/right to turn) and toggle the gripper with the space bar.
 
 ```bash
 export PYTHONPATH=$(pwd)
-python3 r2d2/evolutionary_algorithm/main.py
+python3 r2d2/evolutionary_algorithm/main.py [--workers N] [--generations N] [--population N]
 ```
 
 The algorithm evolves a population of joint-control parameters to minimise the
-distance between R2D2 and a target placed directly ahead of it. Population
-size and generation count are set near the top of `main.py`. Training
+distance between R2D2 and a target placed directly ahead of it. Fitness
+evaluation runs headless (PyBullet `DIRECT`) and is parallelised across worker
+processes — pass `--workers` (default: all CPU cores), `--generations`
+(default: 10) and `--population` (default: 6); see `--help`. Training
 artifacts (final population, fitness history, best generation) are written to
 `r2d2/evolutionary_algorithm/trained_models/` and are git-ignored; a later run
 automatically resumes from the most recent saved population if one is present.
