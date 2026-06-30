@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.2.0 (2026-06-30)
+
+### Features
+
+- Headless + parallel EA training with live per-generation stats
+  ([`de0da2e`](https://github.com/james-worx/softrobot/commit/de0da2e4906825bfc02a97ad6b87d0131183ced1))
+
+
 ## v1.1.0 (2026-06-30)
 
 ### Build System
