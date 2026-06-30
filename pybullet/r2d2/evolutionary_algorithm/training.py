@@ -2,12 +2,26 @@ import numpy as np
 import random
 import os
 import datetime
+import time
+import multiprocessing as mp
 
 def initialize_population(pop_size, num_parameters):
     return np.random.uniform(-10, 10, (pop_size, num_parameters))  # Increased range of initial parameters
 
 
-def evolve_population(population, num_generations, objective_function, mutation_rate=0.1):
+def _init_worker():
+    """Give each parallel worker process its own headless PyBullet connection.
+
+    PyBullet keeps a single physics client per process, so fitness evaluation
+    is parallelised with processes (not threads). Each worker connects once in
+    DIRECT mode and reuses that connection for every candidate it evaluates.
+    """
+    import pybullet as p
+    if p.getConnectionInfo()['isConnected'] == 0:
+        p.connect(p.DIRECT)
+
+
+def evolve_population(population, num_generations, objective_function, mutation_rate=0.1, workers=None):
     """
     Evolves a population over a specified number of generations using an evolutionary algorithm.
 
@@ -30,30 +44,60 @@ def evolve_population(population, num_generations, objective_function, mutation_
     worst_fitnesses = []
     population_history = []
 
-    for generation in range(num_generations):
-        # Evaluate each candidate
-        fitnesses = [objective_function(candidate) for candidate in population]
+    # Fitness evaluation is the bottleneck: each candidate runs a full headless
+    # simulation. Spread the population across worker processes (each with its
+    # own PyBullet connection) so the candidates in a generation evaluate in
+    # parallel. workers=1 falls back to sequential evaluation.
+    if workers is None:
+        workers = os.cpu_count() or 1
+    workers = min(workers, len(population))
+    pool = mp.Pool(processes=workers, initializer=_init_worker) if workers > 1 else None
+    print(f"Evaluating {len(population)} candidates/generation across "
+          f"{workers} worker(s) over {num_generations} generations.")
 
-        # Log fitness values
-        best_fitnesses.append(max(fitnesses))
-        avg_fitnesses.append(np.mean(fitnesses))
-        worst_fitnesses.append(min(fitnesses))
+    start_time = time.time()
+    try:
+        for generation in range(num_generations):
+            gen_start = time.time()
 
-        # Store population history
-        generation_info = [{'parameters': candidate.tolist(), 'fitness': fitness} for candidate, fitness in zip(population, fitnesses)]
-        population_history.append(generation_info)
-        
-        # Select the best candidates
-        selected = select_candidates(population, fitnesses)
-        
-        # Reproduce
-        offspring = reproduce(selected, mutation_rate)
-        
-        # Create the new population
-        population = np.array(offspring)
+            # Evaluate each candidate (in parallel when workers > 1).
+            candidates = list(population)
+            if pool is not None:
+                fitnesses = pool.map(objective_function, candidates)
+            else:
+                fitnesses = [objective_function(candidate) for candidate in candidates]
 
-        # Logging the details of each generation
-        print(f"Generation {generation + 1}: Best fitness = {best_fitnesses[-1]}")
+            # Log fitness values
+            best_fitnesses.append(max(fitnesses))
+            avg_fitnesses.append(np.mean(fitnesses))
+            worst_fitnesses.append(min(fitnesses))
+
+            # Store population history
+            generation_info = [{'parameters': candidate.tolist(), 'fitness': fitness} for candidate, fitness in zip(population, fitnesses)]
+            population_history.append(generation_info)
+
+            # Select the best candidates
+            selected = select_candidates(population, fitnesses)
+
+            # Reproduce
+            offspring = reproduce(selected, mutation_rate)
+
+            # Create the new population
+            population = np.array(offspring)
+
+            # Live per-generation stats: fitness spread, time, and ETA.
+            done = generation + 1
+            gen_time = time.time() - gen_start
+            eta = (time.time() - start_time) / done * (num_generations - done)
+            print(f"Generation {done}/{num_generations}: "
+                  f"best={best_fitnesses[-1]:.3f} "
+                  f"avg={avg_fitnesses[-1]:.3f} "
+                  f"worst={worst_fitnesses[-1]:.3f} | "
+                  f"{gen_time:.1f}s/gen | ETA {eta:.0f}s")
+    finally:
+        if pool is not None:
+            pool.close()
+            pool.join()
 
     # Save training artifacts for analysis and future training sessions.
     # Use a single timestamp so all files from this run share one suffix.

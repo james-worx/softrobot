@@ -66,9 +66,11 @@ def objective_function(robot_parameters):
     Returns:
         float: The negative distance between the robot and a target position in the simulation.
     """
-    # Connect to the physics server
+    # Connect to the physics server. Training runs headless (DIRECT) — the
+    # OpenGL GUI is far slower and is only used for the final best-solution
+    # replay. Reuse any connection the caller (or worker process) already has.
     if p.getConnectionInfo()['isConnected'] == 0:
-        p.connect(p.GUI)  # Use p.DIRECT for no GUI
+        p.connect(p.DIRECT)
 
     # Reset the simulation
     p.resetSimulation()
