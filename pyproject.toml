@@ -26,3 +26,15 @@ package-dir = { "" = "pybullet" }
 
 [tool.setuptools.packages.find]
 where = ["pybullet"]
+
+[project.optional-dependencies]
+dev = ["ruff", "pytest"]
+
+[tool.ruff]
+target-version = "py39"
+# The legacy vPython scripts use `from vpython import *`, the idiomatic
+# vpython style, which trips star-import rules; exclude that legacy tree.
+extend-exclude = ["vPython"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
