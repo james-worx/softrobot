@@ -32,7 +32,7 @@ from r2d2.analysis.parameter_analysis import analyze_parameters
 from r2d2.analysis.final_performance import visualize_best_solution
 
 
-def main(population_size=6, num_generations=10, num_workers=None):
+def main(population_size=20, num_generations=10, num_workers=None):
     """Run the evolutionary algorithm.
 
     Args:
@@ -96,8 +96,9 @@ def parse_args():
         "-g", "--generations", type=int, default=10,
         help="number of generations to evolve (default: 10)")
     parser.add_argument(
-        "-p", "--population", type=int, default=6,
-        help="candidates per generation for a fresh run (default: 6)")
+        "-p", "--population", type=int, default=20,
+        help="candidates per generation for a fresh run (default: 20; "
+             "~2 parallel waves on a 10-core machine)")
     return parser.parse_args()
 
 

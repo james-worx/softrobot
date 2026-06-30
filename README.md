@@ -70,7 +70,7 @@ generation, and ETA). Tune it with make variables:
 make train WORKERS=4         # cap fitness evaluation at 4 worker processes
 make train WORKERS=1         # evaluate sequentially (no multiprocessing)
 make train GENERATIONS=20    # evolve for more generations
-make train POPULATION=10     # larger population (fresh runs only)
+make train POPULATION=40     # larger population (fresh runs only)
 ```
 
 `make sim` opens a GUI window for the whole session, and `make train` opens
@@ -108,7 +108,7 @@ right-side wheel velocities) to minimise the distance between R2D2 and a
 target placed directly ahead of it. Fitness
 evaluation runs headless (PyBullet `DIRECT`) and is parallelised across worker
 processes — pass `--workers` (default: all CPU cores), `--generations`
-(default: 10) and `--population` (default: 6); see `--help`. Training
+(default: 10) and `--population` (default: 20); see `--help`. Training
 artifacts (final population, fitness history, best generation) are written to
 `r2d2/evolutionary_algorithm/trained_models/` and are git-ignored; a later run
 automatically resumes from the most recent saved population if one is present.
